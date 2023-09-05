@@ -58,11 +58,11 @@ public class Configuration {
     }
 
     /**
-     * Gets the filename of the keystore.
+     * Gets the filename of the key store.
      *
-     * @return Keystore filename
+     * @return Key tore filename
      */
-    public String getKeystoreFilename() {
+    public String getKeyStoreFilename() {
         if (!initialized) {
             loadProperties();
         }
@@ -71,15 +71,41 @@ public class Configuration {
     }
 
     /**
-     * Gets the password for accessing the keystore.
+     * Gets the password for accessing the key store.
      *
-     * @return Keystore password
+     * @return Key store password
      */
-    public String getKeystorePassword() {
+    public String getKeyStorePassword() {
         if (!initialized) {
             loadProperties();
         }
 
         return properties.getProperty("keystore.password");
+    }
+
+    /**
+     * Gets the filename of the trust store
+     *
+     * @return Trust store filename
+     */
+    public String getTrustStoreFilename() {
+        if (!initialized) {
+            loadProperties();
+        }
+
+        return properties.getProperty("truststore.filename");
+    }
+
+    /**
+     * Gets the password for accessing the trust store.
+     *
+     * @return Trust store password
+     */
+    public String getTrustStorePassword() {
+        if (!initialized) {
+            loadProperties();
+        }
+
+        return properties.getProperty("truststore.password");
     }
 }
