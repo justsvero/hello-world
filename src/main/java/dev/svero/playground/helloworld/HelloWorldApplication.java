@@ -4,6 +4,8 @@ import dev.svero.playground.helloworld.exceptions.ConfigurationException;
 import dev.svero.playground.helloworld.utils.KeyStoreUtils;
 import dev.svero.playground.helloworld.utils.SSLUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 import java.security.KeyStore;
@@ -14,6 +16,8 @@ import java.security.KeyStore;
  * @author Sven Roeseler
  */
 public class HelloWorldApplication {
+	private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldApplication.class);
+
 	public static void main(String... args) {
 		String addressee = "World";
 
@@ -38,7 +42,7 @@ public class HelloWorldApplication {
 
 			SSLContext sslContext = sslUtils.createSSLContext(keyStore, keyStorePassword, trustStore);
 		} catch (Exception ex) {
-			System.err.println("An error occurred :( => " + ex.getMessage());
+			LOGGER.error("An error occurred", ex);
 		}
 	}
 }
