@@ -19,14 +19,6 @@ public class HelloWorldApplication {
 	private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldApplication.class);
 
 	public static void main(String... args) {
-		String addressee = "World";
-
-		if (args.length > 0 && StringUtils.isNotBlank(args[0])) {
-			addressee = args[0];
-		}
-		
-		System.out.println("Hello, " + addressee + "!");
-
 		try {
 			Configuration configuration = new Configuration();
 			KeyStoreUtils keyStoreUtils = new KeyStoreUtils();
