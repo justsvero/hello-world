@@ -1,5 +1,6 @@
 package dev.svero.playground.helloworld;
 
+import dev.svero.playground.helloworld.exceptions.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -16,5 +17,13 @@ public class HelloWorldApplication {
 		}
 		
 		System.out.println("Hello, " + addressee + "!");
+
+		try {
+			Configuration configuration = new Configuration();
+			final String keystoreFilename = configuration.getKeystoreFilename();
+			System.out.println("Keystore: " + keystoreFilename);
+		} catch (ConfigurationException ex) {
+			System.err.println("Error while accessing the configuration");
+		}
 	}
 }
