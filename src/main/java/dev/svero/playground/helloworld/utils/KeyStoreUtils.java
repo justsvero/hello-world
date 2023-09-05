@@ -1,5 +1,6 @@
 package dev.svero.playground.helloworld.utils;
 
+import dev.svero.playground.helloworld.exceptions.KeyStoreUtilsException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.FileInputStream;
@@ -23,7 +24,7 @@ public class KeyStoreUtils {
      * @param keyStoreType Type (JKS, PKCS.12)
      * @return Created KeyStore instance
      */
-    public KeyStore getKeyStore(final String keyStoreFilename, final String keyStorePassword, final String keyStoreType) {
+    public KeyStore loadKeyStore(final String keyStoreFilename, final String keyStorePassword, final String keyStoreType) {
         if (StringUtils.isBlank(keyStoreFilename)) {
             throw new IllegalArgumentException("keyStoreFilename should not be blank");
         }
@@ -33,7 +34,7 @@ public class KeyStoreUtils {
         }
 
         if (StringUtils.isBlank(keyStoreType)) {
-            return getKeyStore(keyStoreFilename, keyStorePassword);
+            return loadKeyStore(keyStoreFilename, keyStorePassword);
         }
 
         KeyStore keyStore = null;
@@ -42,7 +43,7 @@ public class KeyStoreUtils {
             keyStore = KeyStore.getInstance(keyStoreType);
             keyStore.load(new FileInputStream(keyStoreFilename), keyStorePassword.toCharArray());
         } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new KeyStoreUtilsException("Could not create a KeyStore instance", e);
         }
 
         return keyStore;
@@ -55,7 +56,7 @@ public class KeyStoreUtils {
      * @param keyStorePassword Password for accessing the key store
      * @return Created KeyStore instance
      */
-    public KeyStore getKeyStore(final String keyStoreFilename, final String keyStorePassword) {
-        return getKeyStore(keyStoreFilename, keyStorePassword, "PKCS12");
+    public KeyStore loadKeyStore(final String keyStoreFilename, final String keyStorePassword) {
+        return loadKeyStore(keyStoreFilename, keyStorePassword, "PKCS12");
     }
 }

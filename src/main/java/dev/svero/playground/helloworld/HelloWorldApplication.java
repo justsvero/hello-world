@@ -1,9 +1,7 @@
 package dev.svero.playground.helloworld;
 
-import dev.svero.playground.helloworld.exceptions.ConfigurationException;
 import dev.svero.playground.helloworld.utils.KeyStoreUtils;
 import dev.svero.playground.helloworld.utils.SSLUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,11 +24,11 @@ public class HelloWorldApplication {
 
 			final String keystoreFilename = configuration.getKeyStoreFilename();
 			final String keyStorePassword = configuration.getKeyStorePassword();
-			KeyStore keyStore = keyStoreUtils.getKeyStore(keystoreFilename, keyStorePassword);
+			KeyStore keyStore = keyStoreUtils.loadKeyStore(keystoreFilename, keyStorePassword);
 
 			final String trustStoreFilename = configuration.getTrustStoreFilename();
 			final String trustStorePassword = configuration.getTrustStorePassword();
-			KeyStore trustStore = keyStoreUtils.getKeyStore(trustStoreFilename, trustStorePassword);
+			KeyStore trustStore = keyStoreUtils.loadKeyStore(trustStoreFilename, trustStorePassword);
 
 			SSLContext sslContext = sslUtils.createSSLContext(keyStore, keyStorePassword, trustStore);
 		} catch (Exception ex) {

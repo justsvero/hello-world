@@ -1,6 +1,9 @@
 package dev.svero.playground.helloworld.utils;
 
+import dev.svero.playground.helloworld.exceptions.SSLUtilsException;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -13,6 +16,8 @@ import java.security.*;
  * @author Sven Roeseler
  */
 public class SSLUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SSLUtils.class);
+
     /**
      * Creates a SSL context.
      *
@@ -37,20 +42,23 @@ public class SSLUtils {
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(trustStore);
 
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance("RSA");
+            KeyManagerFactory kmf;
+            try {
+                kmf = KeyManagerFactory.getInstance("PKIX");
+            } catch (NoSuchAlgorithmException ex) {
+                kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            }
+
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Used algorithm for key manager factory: {}", kmf.getAlgorithm());
+            }
+
             kmf.init(keyStore, keyStorePassword.toCharArray());
 
             context = SSLContext.getInstance("TLS");
             context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Could not create the SSL context because the " +
-                    "required algorithm does not exist", e);
-        } catch (UnrecoverableKeyException e) {
-            throw new RuntimeException("Could not find a key in the specified key store", e);
-        } catch (KeyStoreException e) {
-            throw new RuntimeException("An unspecified exception occurred while accessing the keystore", e);
-        } catch (KeyManagementException e) {
-            throw new RuntimeException("An unspecified exception occurred while trying to get the key manager", e);
+        } catch (NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException e) {
+            throw new SSLUtilsException("Could not create SSL context instance", e);
         }
 
         return context;

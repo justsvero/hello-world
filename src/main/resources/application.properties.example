@@ -1,2 +1,6 @@
 keystore.filename=
 keystore.password=
+truststore.filename=
+truststore.password=
+keycloak.url=
+keycloak.client_id=
