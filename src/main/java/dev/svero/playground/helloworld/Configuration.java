@@ -1,9 +1,13 @@
 package dev.svero.playground.helloworld;
 
-import dev.svero.playground.helloworld.exceptions.ConfigurationException;
-import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 /**
@@ -13,48 +17,54 @@ import java.util.Properties;
  * @author Sven Roeseler
  */
 public class Configuration {
-    private static final String DEFAULT_PROPERTIES_FILENAME = "/application.properties";
-    private boolean initialized = false;
-
-    final String propertiesFilename;
+    final static Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
     final Properties properties = new Properties();
-
-    /**
-     * Creates a new instance using the default filename for
-     * properties.
-     */
-    public Configuration() {
-        propertiesFilename = DEFAULT_PROPERTIES_FILENAME;
-    }
-
-    /**
-     * Creates a new instance using the specified filename.
-     *
-     * @param propertiesFilename Filename of the properties
-     */
-    public Configuration(final String propertiesFilename) {
-        if (StringUtils.isBlank(propertiesFilename)) {
-            throw new IllegalArgumentException("propertiesFilename may not be blank");
-        }
-
-        this.propertiesFilename = propertiesFilename;
-    }
 
     /**
      * Tries to load the properties.
      */
-    private void loadProperties() {
-        if (!properties.isEmpty()) {
-            return;
+    public boolean init(final String filename) {
+        boolean result = true;
+
+        InputStream inputStream;
+
+        File file = new File(filename);
+        if (file.exists() && file.isFile()) {
+            // Try to load from normal file
+            try {
+                inputStream = new FileInputStream(filename);
+            } catch (FileNotFoundException ex) {
+                LOGGER.error("File not found: {}", filename);
+                throw new IllegalStateException("Specified file was not found: " + filename, ex);
+            }
+        } else {
+            // Try to load from resource
+            if (filename.startsWith("/")) {
+                LOGGER.debug("Try to load configuration as classpath resource: {}", 
+                    filename);
+                inputStream = getClass().getResourceAsStream(filename);
+            } else {
+                String tmpFilename = "/" + filename;
+                LOGGER.debug("Try to load configuration as classpath resource: {}", 
+                    tmpFilename);
+                // We need to prefix the path with "/" to find in within the resource path
+                inputStream = getClass().getResourceAsStream(tmpFilename);
+            }
+
+            if (inputStream == null) {
+                LOGGER.warn("Properties file not found");
+                return false;
+            }
         }
 
         try {
-            properties.load(this.getClass().getResourceAsStream(propertiesFilename));
-            initialized = true;
-        } catch (IOException ex) {
-            System.err.println("An error occurred: " + ex.getMessage());
-            throw new ConfigurationException("Could not load the properties", ex);
+            properties.load(inputStream);
+        } catch (IOException e) {
+            LOGGER.error("An unspecified error occurred while reading the file", e);
+            throw new IllegalStateException("Could not load data from file", e);
         }
+
+        return result;
     }
 
     /**
@@ -63,10 +73,6 @@ public class Configuration {
      * @return Key tore filename
      */
     public String getKeyStoreFilename() {
-        if (!initialized) {
-            loadProperties();
-        }
-
         return properties.getProperty("keystore.filename");
     }
 
@@ -76,10 +82,6 @@ public class Configuration {
      * @return Key store password
      */
     public String getKeyStorePassword() {
-        if (!initialized) {
-            loadProperties();
-        }
-
         return properties.getProperty("keystore.password");
     }
 
@@ -89,10 +91,6 @@ public class Configuration {
      * @return Trust store filename
      */
     public String getTrustStoreFilename() {
-        if (!initialized) {
-            loadProperties();
-        }
-
         return properties.getProperty("truststore.filename");
     }
 
@@ -102,10 +100,6 @@ public class Configuration {
      * @return Trust store password
      */
     public String getTrustStorePassword() {
-        if (!initialized) {
-            loadProperties();
-        }
-
         return properties.getProperty("truststore.password");
     }
 }
