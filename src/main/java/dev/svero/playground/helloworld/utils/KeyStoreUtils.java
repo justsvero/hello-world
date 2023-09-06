@@ -5,9 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.cert.CertificateException;
 
 /**
@@ -58,5 +56,36 @@ public class KeyStoreUtils {
      */
     public KeyStore loadKeyStore(final String keyStoreFilename, final String keyStorePassword) {
         return loadKeyStore(keyStoreFilename, keyStorePassword, "PKCS12");
+    }
+
+    /**
+     * Tries to get the specified private key.
+     *
+     * @param keyStore Key store instance
+     * @param alias Alias for the private key entry
+     * @param password Password for accessing the private key entry
+     * @return Private key
+     */
+    public PrivateKey getKey(final KeyStore keyStore, final String alias, final String password) {
+        if (keyStore == null) {
+            throw new IllegalArgumentException("keyStore may not be null");
+        }
+
+        if (StringUtils.isBlank(alias)) {
+            throw new IllegalArgumentException();
+        }
+
+        if (StringUtils.isBlank(password)) {
+            throw new IllegalArgumentException();
+        }
+
+        PrivateKey privateKey;
+        try {
+            privateKey = (PrivateKey) keyStore.getKey(alias, password.toCharArray());
+        } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
+            throw new RuntimeException(e);
+        }
+
+        return privateKey;
     }
 }

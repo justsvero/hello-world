@@ -1,5 +1,6 @@
 package dev.svero.playground.helloworld;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,5 +102,54 @@ public class Configuration {
      */
     public String getTrustStorePassword() {
         return properties.getProperty("truststore.password");
+    }
+
+    /**
+     * Gets the value for the specified key as String. If the key is not found a value of null is returned.
+     *
+     * @param key Key
+     * @return Value as string or null
+     */
+    public String getString(final String key) {
+        if (StringUtils.isBlank(key)) {
+            throw new IllegalArgumentException("key may not be blank");
+        }
+
+        return properties.getProperty(key);
+    }
+
+    /**
+     * Gets the value for the specified key as String. If the key is not found and the flag "failWhenNotFound" is
+     * set to true an IllegalStateException is thrown. Otherwise, null is returned.
+     *
+     * @param key Key to lookup for
+     * @param failWhenNotFound If true an exception is thrown when the key was not found
+     * @return Value as string or null
+     * @throws IllegalStateException If failWhenNotFound is true and the key was not found
+     */
+    public String getString(final String key, final boolean failWhenNotFound) {
+        final String result = getString(key);
+
+        if (failWhenNotFound && result == null) {
+            throw new IllegalStateException("Value for key \"" + key + "\" not found");
+        }
+
+        return result;
+    }
+
+    /**
+     * Gets the value for the specified key as String. If the key is not found the specified default value
+     * is returned.
+     *
+     * @param key Key
+     * @param defaultValue Default value in case the key was not found
+     * @return Value as String or the specified default value
+     */
+    public String getString(final String key, final String defaultValue) {
+        if (StringUtils.isBlank(key)) {
+            throw new IllegalArgumentException("key may not be blank");
+        }
+
+        return properties.getProperty(key, defaultValue);
     }
 }

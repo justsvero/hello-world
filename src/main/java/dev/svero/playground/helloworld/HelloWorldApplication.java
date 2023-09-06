@@ -1,5 +1,6 @@
 package dev.svero.playground.helloworld;
 
+import dev.svero.playground.helloworld.utils.HttpUtils;
 import dev.svero.playground.helloworld.utils.KeyStoreUtils;
 import dev.svero.playground.helloworld.utils.SSLUtils;
 
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 import java.security.KeyStore;
+import java.security.PrivateKey;
 
 /**
  * Implements the entry point for the application.
@@ -20,26 +22,59 @@ public class HelloWorldApplication {
 	private static final String PROPERTY_CONFIGURATION = "configuration";
 	private static final String ENVIRONMENT_CONFIGURATION = "VERUNA_CLIENT_CONFIG_FILE";
 
+	private static final JWTUtils JWT_UTILS = new JWTUtils();
+	private static final KeyStoreUtils KEY_STORE_UTILS = new KeyStoreUtils();
+	private static final SSLUtils SSL_UTILS = new SSLUtils();
+
+	/**
+	 * Entry point for running the application.
+	 *
+	 * You can specify a filename as optional command-line argument. If it is present the configuration
+	 * is read from it.
+	 *
+	 * @param args String array with command-line arguments.
+	 */
 	public static void main(String... args) {
 		try {
 			String filename = getConfigurationFilename(args);
 			LOGGER.debug("Reading settings from \"{}\"", filename);
 
 			Configuration configuration = new Configuration();
-			configuration.init(filename);
+			if (!configuration.init(filename)) {
+				LOGGER.error("Could not get the configuration");
+				System.exit(1);
+			}
 
-			KeyStoreUtils keyStoreUtils = new KeyStoreUtils();
-			SSLUtils sslUtils = new SSLUtils();
+			final String keyStoreFilename = configuration.getString("keystore.filename", true);
+			final String keyStorePassword = configuration.getString("keystore.password", true);
+			final String keyStoreType = configuration.getString("keystore.type", "PKCS12");
+			KeyStore keyStore = KEY_STORE_UTILS.loadKeyStore(keyStoreFilename, keyStorePassword, keyStoreType);
 
-			final String keystoreFilename = configuration.getKeyStoreFilename();
-			final String keyStorePassword = configuration.getKeyStorePassword();
-			KeyStore keyStore = keyStoreUtils.loadKeyStore(keystoreFilename, keyStorePassword);
+			final String trustStoreFilename = configuration.getString("truststore.filename", true);
+			final String trustStorePassword = configuration.getString("truststore.password", true);
+			final String trustStoreType = configuration.getString("truststore.type", "PKCS12");
+			KeyStore trustStore = KEY_STORE_UTILS.loadKeyStore(trustStoreFilename, trustStorePassword, trustStoreType);
 
-			final String trustStoreFilename = configuration.getTrustStoreFilename();
-			final String trustStorePassword = configuration.getTrustStorePassword();
-			KeyStore trustStore = keyStoreUtils.loadKeyStore(trustStoreFilename, trustStorePassword);
+			final String privateKeyAlias = configuration.getString("keystore.private_key.alias", true);
+			final String privateKeyPassword = configuration.getString("keystore.private_key.password", true);
+			final String issuer = configuration.getString("keycloak.issuer", true);
+			final String audience = configuration.getString("keycloak.audience", true);
+			final String subject = configuration.getString("keycloak.subject", true);
+			final PrivateKey privateKey = KEY_STORE_UTILS.getKey(keyStore, privateKeyAlias, privateKeyPassword);
+			final String jwt = JWT_UTILS.generateJwt(issuer, audience, subject, privateKey);
 
-			SSLContext sslContext = sslUtils.createSSLContext(keyStore, keyStorePassword, trustStore);
+			LOGGER.debug("JWT: {}", jwt);
+			String tokenRequestData = "grant_type=client_credentials" +
+					"&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" +
+					"&client_assertion=" + jwt;
+
+			SSLContext sslContext = SSL_UTILS.createSSLContext(keyStore, keyStorePassword, trustStore);
+
+			HttpUtils httpUtils = new HttpUtils(sslContext);
+			final String url = configuration.getString("keycloak.token_endpoint_url", true);
+			String result = httpUtils.postRequest(url, tokenRequestData);
+
+			LOGGER.debug("Result: {}", result);
 		} catch (Exception ex) {
 			LOGGER.error("An error occurred", ex);
 		}
