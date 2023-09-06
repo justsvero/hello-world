@@ -69,42 +69,6 @@ public class Configuration {
     }
 
     /**
-     * Gets the filename of the key store.
-     *
-     * @return Key tore filename
-     */
-    public String getKeyStoreFilename() {
-        return properties.getProperty("keystore.filename");
-    }
-
-    /**
-     * Gets the password for accessing the key store.
-     *
-     * @return Key store password
-     */
-    public String getKeyStorePassword() {
-        return properties.getProperty("keystore.password");
-    }
-
-    /**
-     * Gets the filename of the trust store
-     *
-     * @return Trust store filename
-     */
-    public String getTrustStoreFilename() {
-        return properties.getProperty("truststore.filename");
-    }
-
-    /**
-     * Gets the password for accessing the trust store.
-     *
-     * @return Trust store password
-     */
-    public String getTrustStorePassword() {
-        return properties.getProperty("truststore.password");
-    }
-
-    /**
      * Gets the value for the specified key as String. If the key is not found a value of null is returned.
      *
      * @param key Key
@@ -151,5 +115,30 @@ public class Configuration {
         }
 
         return properties.getProperty(key, defaultValue);
+    }
+
+    /**
+     * Gets the value of the specified key as integer value.
+     *
+     * @param key Key
+     * @param defaultValue Default value if key was not found
+     * @return Value
+     */
+    public int getInteger(final String key, final int defaultValue) {
+        int value;
+
+        String strValue = getString(key);
+        if (StringUtils.isBlank(strValue)) {
+            return defaultValue;
+        }
+
+        try {
+            value = Integer.parseInt(strValue);
+        } catch (NumberFormatException e) {
+            LOGGER.error("Error while reading integer value", e);
+            return defaultValue;
+        }
+
+        return value;
     }
 }

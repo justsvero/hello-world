@@ -1,6 +1,7 @@
 package dev.svero.playground.helloworld;
 
 import dev.svero.playground.helloworld.utils.HttpUtils;
+import dev.svero.playground.helloworld.utils.KeyCloakClient;
 import dev.svero.playground.helloworld.utils.KeyStoreUtils;
 import dev.svero.playground.helloworld.utils.SSLUtils;
 
@@ -45,36 +46,43 @@ public class HelloWorldApplication {
 				System.exit(1);
 			}
 
+			// Create the key store
 			final String keyStoreFilename = configuration.getString("keystore.filename", true);
 			final String keyStorePassword = configuration.getString("keystore.password", true);
 			final String keyStoreType = configuration.getString("keystore.type", "PKCS12");
 			KeyStore keyStore = KEY_STORE_UTILS.loadKeyStore(keyStoreFilename, keyStorePassword, keyStoreType);
 
+			// Create the trust store
 			final String trustStoreFilename = configuration.getString("truststore.filename", true);
 			final String trustStorePassword = configuration.getString("truststore.password", true);
 			final String trustStoreType = configuration.getString("truststore.type", "PKCS12");
 			KeyStore trustStore = KEY_STORE_UTILS.loadKeyStore(trustStoreFilename, trustStorePassword, trustStoreType);
 
-			final String privateKeyAlias = configuration.getString("keystore.private_key.alias", true);
-			final String privateKeyPassword = configuration.getString("keystore.private_key.password", true);
-			final String issuer = configuration.getString("keycloak.issuer", true);
-			final String audience = configuration.getString("keycloak.audience", true);
-			final String subject = configuration.getString("keycloak.subject", true);
-			final PrivateKey privateKey = KEY_STORE_UTILS.getKey(keyStore, privateKeyAlias, privateKeyPassword);
-			final String jwt = JWT_UTILS.generateJwt(issuer, audience, subject, privateKey);
-
-			LOGGER.debug("JWT: {}", jwt);
-			String tokenRequestData = "grant_type=client_credentials" +
-					"&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" +
-					"&client_assertion=" + jwt;
-
+			// Create SSL context
 			SSLContext sslContext = SSL_UTILS.createSSLContext(keyStore, keyStorePassword, trustStore);
 
-			HttpUtils httpUtils = new HttpUtils(sslContext);
-			final String url = configuration.getString("keycloak.token_endpoint_url", true);
-			String result = httpUtils.postRequest(url, tokenRequestData);
+			// Get the signing key for the JSON Web Tokeb
+			final String privateKeyAlias = configuration.getString("keystore.private_key.alias", true);
+			final String privateKeyPassword = configuration.getString("keystore.private_key.password", true);
+			final PrivateKey privateKey = KEY_STORE_UTILS.getKey(keyStore, privateKeyAlias, privateKeyPassword);
 
-			LOGGER.debug("Result: {}", result);
+			// Gets the KeyCloak settings
+			final String keyCloakBaseUrl = configuration.getString("keycloak.baseUrl", true);
+			final String keyCloakRealm = configuration.getString("keycloak.realm", true);
+
+			// Generate JSON Web Token
+			final String issuer = configuration.getString("keycloak.issuer", true);
+			final String audience = String.format("%s/realms/%s", keyCloakBaseUrl, keyCloakRealm);
+			final String subject = configuration.getString("keycloak.subject", true);
+			final String jwt = JWT_UTILS.generateJwt(issuer, audience, subject, privateKey);
+
+			// Create the HTTP client with SSL support
+			HttpUtils httpUtils = new HttpUtils(sslContext);
+
+			// Get the access token
+			KeyCloakClient keyCloakClient = new KeyCloakClient(httpUtils, keyCloakBaseUrl, keyCloakRealm);
+			String accessToken = keyCloakClient.getAccessToken(jwt);
+			LOGGER.debug("Token: {}", accessToken);
 		} catch (Exception ex) {
 			LOGGER.error("An error occurred", ex);
 		}

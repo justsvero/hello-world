@@ -1,6 +1,15 @@
 keystore.filename=
 keystore.password=
+keystore.type=pkcs12
+
+keystore.private_key.alias=
+keystore.private_key.password=
+
 truststore.filename=
 truststore.password=
-keycloak.url=
-keycloak.client_id=
+truststore.type=pkcs12
+
+keycloak.baseUrl=
+keycloak.realm=
+keycloak.issuer=
+keycloak.subject=
