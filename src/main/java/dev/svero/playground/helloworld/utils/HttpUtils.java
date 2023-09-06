@@ -1,6 +1,7 @@
 package dev.svero.playground.helloworld.utils;
 
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,10 +16,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Implements methods for performing HTTP requests.
@@ -51,7 +49,7 @@ public class HttpUtils {
      *
      * @param url Target URL for the request.
      * @return The server response as string.
-     * @throws IOException If an I/O error occurred.
+     * @throws IOException          If an I/O error occurred.
      * @throws InterruptedException If the request was interrupted before the response was received.
      */
     public String getRequest(final String url) throws IOException, InterruptedException {
@@ -67,12 +65,12 @@ public class HttpUtils {
     /**
      * Performs a POST request to the specified URL using the specified data as request body.
      *
-     * @param url Target url for request
+     * @param url         Target url for request
      * @param requestData Data for request body
      * @return Server response as string
-     * @throws IOException If an I/O error occurred
+     * @throws IOException          If an I/O error occurred
      * @throws InterruptedException If the request was interrupted before the response was received
-     * @throws URISyntaxException If the specified URL is invalid
+     * @throws URISyntaxException   If the specified URL is invalid
      */
     public String postRequest(final String url, final String requestData)
             throws IOException, InterruptedException, URISyntaxException {
@@ -91,12 +89,26 @@ public class HttpUtils {
     /**
      * Performs a multipart POST request to the specified URL and returns the answer.
      *
-     * @param url Target URL for the request
+     * @param url         Target URL for the request
      * @param requestData Multipart message as request data
      * @return Response from the server
      * @throws IOException If something went wrong
      */
     public String postMultipartRequest(final String url, Map<Object, Object> requestData)
+            throws IOException, InterruptedException {
+        return postMultipartRequest(url, requestData, null);
+    }
+
+    /**
+     * Performs a multipart POST request to the specified URL and returns the answer.
+     *
+     * @param url         Target URL for the request
+     * @param requestData Multipart message as request data
+     * @param headers     Optional map with addional request headers
+     * @return Response from the server
+     * @throws IOException If something went wrong
+     */
+    public String postMultipartRequest(final String url, Map<Object, Object> requestData, Map<String, String> headers)
             throws IOException, InterruptedException {
         if (StringUtils.isBlank(url)) {
             throw new IllegalArgumentException("url may not be blank");
@@ -109,11 +121,20 @@ public class HttpUtils {
         String boundary = new BigInteger(256, new Random()).toString();
         LOGGER.debug("Multipart boundary: {}", boundary);
 
-        HttpRequest request =  HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Content-Type", "multipart/form-data;boundary=" + boundary)
-                .POST(ofMimeMultipartData(requestData, boundary))
-                .build();
+        HttpRequest.Builder builder = HttpRequest.newBuilder();
+        builder.uri(URI.create(url));
+        builder.header("Content-Type", "multipart/form-data;boundary=" + boundary);
+
+        if (headers != null && !headers.isEmpty()) {
+            for (String key : headers.keySet()) {
+                String value = headers.get(key);
+                builder.header(key, value);
+            }
+        }
+
+        builder.POST(ofMimeMultipartData(requestData, boundary));
+
+        HttpRequest request = builder.build();
 
         return processRequest(request);
     }
@@ -140,10 +161,10 @@ public class HttpUtils {
      *
      * @param request Request to perform
      * @return Response body as string
-     * @throws IOException If an I/O error happened
+     * @throws IOException          If an I/O error happened
      * @throws InterruptedException If the request was interrupted before the response was received
      */
-    private String processRequest(HttpRequest request) throws IOException, InterruptedException {
+    public String processRequest(HttpRequest request) throws IOException, InterruptedException {
         if (request == null) {
             throw new IllegalArgumentException("request may not be null");
         }
@@ -171,13 +192,13 @@ public class HttpUtils {
     /**
      * <a href="https://stackoverflow.com/questions/56481475/how-to-define-multiple-parameters-for-a-post-request-using-java-11-http-client">Source</a>
      *
-     * @param data Map with data
+     * @param data     Map with data
      * @param boundary Boundary for message parts
      * @return BodyPublisher instance
      * @throws IOException if something went wrong
      */
-    private HttpRequest.BodyPublisher ofMimeMultipartData(Map<Object, Object> data,
-                                                          String boundary) throws IOException {
+    public HttpRequest.BodyPublisher ofMimeMultipartData(Map<Object, Object> data,
+                                                         String boundary) throws IOException {
         if (data == null || data.isEmpty()) {
             throw new IllegalArgumentException("data may not be null or empty");
         }
@@ -206,6 +227,11 @@ public class HttpUtils {
                         + "\"\r\nContent-Type: " + mimeType + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
                 byteArrays.add(Files.readAllBytes(path));
                 byteArrays.add("\r\n".getBytes(StandardCharsets.UTF_8));
+            } else if (entry.getValue() instanceof JSONObject) {
+                String mimeType = "application/json";
+                byteArrays.add(("\"" + entry.getKey() + "\"" + "\r\nContent-Type:" + mimeType + "\r\n\r\n"
+                        + entry.getValue() + "\r\n")
+                        .getBytes(StandardCharsets.UTF_8));
             } else {
                 byteArrays.add(("\"" + entry.getKey() + "\"\r\n\r\n" + entry.getValue() + "\r\n")
                         .getBytes(StandardCharsets.UTF_8));

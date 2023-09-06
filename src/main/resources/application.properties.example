@@ -13,3 +13,6 @@ keycloak.baseUrl=
 keycloak.realm=
 keycloak.issuer=
 keycloak.subject=
+
+validationService.baseUrl=
+validationService.endPoint=/v1/validate

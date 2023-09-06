@@ -1,5 +1,6 @@
-package dev.svero.playground.helloworld.utils;
+package dev.svero.playground.helloworld;
 
+import dev.svero.playground.helloworld.utils.HttpUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

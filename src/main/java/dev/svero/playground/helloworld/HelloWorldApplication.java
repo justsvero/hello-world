@@ -1,19 +1,21 @@
 package dev.svero.playground.helloworld;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import dev.svero.playground.helloworld.models.ReportConfiguration;
+import dev.svero.playground.helloworld.models.ValidationServiceConfiguration;
 import dev.svero.playground.helloworld.utils.HttpUtils;
-import dev.svero.playground.helloworld.utils.KeyCloakClient;
 import dev.svero.playground.helloworld.utils.KeyStoreUtils;
 import dev.svero.playground.helloworld.utils.SSLUtils;
 
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
-import java.math.BigInteger;
 import java.security.KeyStore;
 import java.security.PrivateKey;
-import java.util.Random;
 
 /**
  * Implements the entry point for the application.
@@ -85,6 +87,16 @@ public class HelloWorldApplication {
 			KeyCloakClient keyCloakClient = new KeyCloakClient(httpUtils, keyCloakBaseUrl, keyCloakRealm);
 			String accessToken = keyCloakClient.getAccessToken(jwt);
 			LOGGER.debug("Token: {}", accessToken);
+
+			ValidationServiceConfiguration serviceConfiguration = new ValidationServiceConfiguration();
+			serviceConfiguration.addReportConfiguration("PDF", "EN");
+			serviceConfiguration.addReportConfiguration("SVR");
+			serviceConfiguration.addReportConfiguration("HTML", "DE");
+			serviceConfiguration.setProfile("AUTOMATIC");
+			serviceConfiguration.setMaxRecursionDepth(3);
+
+			Gson gsonBuilder = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss").create();
+			LOGGER.debug("Service configuration: {}", gsonBuilder.toJson(serviceConfiguration));
 		} catch (Exception ex) {
 			LOGGER.error("An error occurred", ex);
 		}
